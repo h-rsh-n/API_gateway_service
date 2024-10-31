@@ -1,7 +1,8 @@
 const { StatusCodes } = require("http-status-codes");
 const { errorMessage } = require("../utils/common");
 const AppError = require("../utils/errors/app-error");
-const {userService} = require('../service')
+const {userService} = require('../service');
+const { error } = require("../utils/common/success");
 
 function validateRequest(req,res,next){
   const fields = ['email','password'];
@@ -19,6 +20,22 @@ function validateRequest(req,res,next){
   next()
 }
 
+function validateAddRole(req,res,next){
+  const fields = ['id','role'];
+  const missingFileds = [];
+  fields.forEach((field)=>{
+    if(!req.body[field]){
+      missingFileds.push(`${field} is missing in the request`);
+    }
+  })
+  if(missingFileds.length){
+    errorMessage.message = `Something went wrong`
+    errorMessage.error = new AppError(missingFileds,StatusCodes.BAD_REQUEST);
+    return res.status(StatusCodes.BAD_REQUEST).json(errorMessage)
+  }
+  next();
+}
+
 async function checkAuth(req,res,next){
   try {
     const token = req.headers['authorization'].split(' ')[1]
@@ -32,7 +49,22 @@ async function checkAuth(req,res,next){
   }
 }
 
+async function isAdmin(req,res,next) {
+  try {
+    const response = await userService.isAdmin(req.user);
+    if(!response){
+      throw error
+    } 
+    next();
+  } catch (error) {
+    errorMessage.message = `User not authorized`;
+    errorMessage.error = new AppError(`Authorization failed`,StatusCodes.UNAUTHORIZED);
+    return res.status(StatusCodes.UNAUTHORIZED).json(errorMessage);
+  }
+}
 module.exports = {
   validateRequest,
-  checkAuth
+  checkAuth,
+  isAdmin,
+  validateAddRole
 }

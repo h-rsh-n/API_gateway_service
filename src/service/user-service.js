@@ -1,12 +1,17 @@
 const {StatusCodes} = require('http-status-codes');
-const { UserRepository } = require('../repositories');
+const { UserRepository, RoleRepository } = require('../repositories');
 const AppError = require('../utils/errors/app-error');
+const {Enums} = require('../utils/common')
 const {Auth} = require('../utils/common');
 
 const userRepository = new UserRepository();
+const roleRepository = new RoleRepository();
+
 async function signup(data) {
   try {
     const user = await userRepository.create(data);
+    const role = await roleRepository.getRoleByname(Enums.userRole.CUSTOMER);
+    user.addRole(role);
     return user;
   } catch (error) {
     if(error.name == 'SequelizeUniqueConstraintError'){
@@ -63,8 +68,46 @@ async function checkAuth(token) {
   }
 }
 
+
+async function addRole(data){
+  try {
+    const user = await userRepository.get(data.id);
+    if(!user){
+      throw new AppError(`No user found with the given id`,StatusCodes.NOT_FOUND);
+    }
+    const role = await roleRepository.getRoleByname(data.role);
+    if(!role){
+      throw new AppError(`No role found`,StatusCodes.NOT_FOUND);
+    }
+    user.addRole(role);
+    return user;
+  } catch (error) {
+    if(error instanceof AppError) throw error;
+    throw new AppError('Something went wrong while adding role',StatusCodes.INTERNAL_SERVER_ERROR);
+  }
+}
+
+async function isAdmin(data) {
+  try {
+    const user = await userRepository.get(data);
+    if(!user){
+      throw new AppError(`No user found with given id`,StatusCodes.NOT_FOUND);
+    }
+    const adminRole = await roleRepository.getRoleByname(Enums.userRole.ADMIN);
+    if(!adminRole){
+      throw new AppError(`No role found`,StatusCodes.NOT_FOUND);
+    }
+    return user.hasRole(adminRole)
+  } catch (error) {
+    console.log(error);
+    if(error instanceof AppError) throw error;
+    throw new AppError('Something went wrong while authorizaton',StatusCodes.INTERNAL_SERVER_ERROR);
+  }
+}
 module.exports = {
   signup,
   signin,
-  checkAuth
+  checkAuth,
+  addRole,
+  isAdmin
 }

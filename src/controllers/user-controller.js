@@ -34,7 +34,27 @@ async function sigin(req,res){
   }
 }
 
+async function addRole(req,res){
+  try {
+    const response = await userService.addRole({
+      id:req.body.id,
+      role:req.body.role
+    })
+    successMessage.data = response;
+    res.status(StatusCodes.OK).json(successMessage)
+  } catch (error) {
+    console.log(error)
+    if(error.statusCode == undefined){
+      error.statusCode = StatusCodes.INTERNAL_SERVER_ERROR
+      errorMessage.error.message = error.message
+    }
+    
+    return res.status(error.statusCode).json(errorMessage)
+  }
+}
+
 module.exports = {
   signup,
-  sigin
+  sigin,
+  addRole
 }
