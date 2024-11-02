@@ -53,7 +53,7 @@ async function checkAuth(token) {
     if(!user){
       throw new AppError(`No user found`,StatusCodes.NOT_FOUND);
     }
-    return response.id;
+    return response;
   } catch (error) {
     if(error instanceof AppError){
       throw error;

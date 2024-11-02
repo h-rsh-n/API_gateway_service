@@ -45,13 +45,17 @@ async function checkAuth(req,res,next){
       next();
     }
   } catch (error) {
-    return res.status(error.statusCode).json(error);
+    if(error.statusCode == undefined){
+      error.statusCode =  StatusCodes.BAD_REQUEST,
+      errorMessage.error = error.message
+    }
+    return res.status(error.statusCode).json(errorMessage);
   }
 }
 
 async function isAdmin(req,res,next) {
   try {
-    const response = await userService.isAdmin(req.user);
+    const response = await userService.isAdmin(req.user.id);
     if(!response){
       throw error
     } 
